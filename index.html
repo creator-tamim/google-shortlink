@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google Shortlink</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-dark: #050b1a;
+  --bg-card: #0a1428;
+  --bg-input: #0d1a30;
+  --border: #1a2f52;
+  --border-hover: #234a7a;
+  --text-primary: #ffffff;
+  --text-secondary: #8aa4c8;
+  --text-muted: #4e6a92;
+  --accent: #2b8cff;
+  --accent-2: #0055cc;
+  --accent-light: #5eb0ff;
+  --accent-glow: rgba(43, 140, 255, 0.4);
+  --success: #22c55e;
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-main);
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 16px;
+  position: relative;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Background animated glow orbs — now BLUE */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::before {
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, #2b8cff 0%, transparent 70%);
+  top: -180px;
+  left: -180px;
+  animation: float1 12s ease-in-out infinite;
+}
+
+body::after {
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, #004a99 0%, transparent 70%);
+  bottom: -220px;
+  right: -180px;
+  animation: float2 14s ease-in-out infinite;
+}
+
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(60px, 40px); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-50px, -40px); }
+}
+
+/* Subtle grid pattern */
+body {
+  background-image:
+    linear-gradient(rgba(100, 170, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(100, 170, 255, 0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.gs-wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 480px;
+}
+
+.gs-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 36px 32px;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 30px 60px -20px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(43, 140, 255, 0.05) inset,
+    0 0 80px -30px rgba(43, 140, 255, 0.3);
+  animation: cardIn 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.gs-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--accent-light), transparent);
+  opacity: 0.8;
+}
+
+/* Top badge */
+.gs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(43, 140, 255, 0.1);
+  border: 1px solid rgba(43, 140, 255, 0.3);
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--accent-light);
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.gs-pulse {
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* Title */
+.gs-title {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.9px;
+  line-height: 1.05;
+  margin-bottom: 10px;
+}
+
+.gs-title .accent {
+  background: linear-gradient(135deg, #5eb0ff 0%, #2b8cff 60%, #0055cc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Labels */
+.gs-label {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+/* Input group */
+.gs-field {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.gs-input {
+  width: 100%;
+  padding: 16px 18px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-mono);
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.gs-input::placeholder {
+  color: #3a4d68;
+  font-family: var(--font-main);
+}
+
+.gs-input:focus {
+  border-color: var(--accent);
+  background: #0f2038;
+  box-shadow: 0 0 0 4px rgba(43, 140, 255, 0.15);
+}
+
+/* Convert button — BLUE gradient */
+.gs-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #2b8cff 0%, #0055cc 100%);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 26px;
+  box-shadow: 0 6px 20px -4px var(--accent-glow);
+}
+
+.gs-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 30%, rgba(255, 255, 255, 0.3), transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 0.6s;
+}
+
+.gs-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -6px var(--accent-glow);
+}
+
+.gs-btn:hover::before {
+  transform: translateX(100%);
+}
+
+.gs-btn:active {
+  transform: translateY(0);
+}
+
+.gs-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Output box */
+.gs-output {
+  background: #060f1f;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.gs-output.has-result {
+  border-color: rgba(43, 140, 255, 0.45);
+  background: linear-gradient(180deg, rgba(43, 140, 255, 0.06) 0%, #060f1f 100%);
+  box-shadow: 0 0 24px -8px var(--accent-glow);
+}
+
+.gs-output.has-result::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #5eb0ff, #2b8cff, #0055cc);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.gs-output-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.gs-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9.5px;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  transition: color 0.3s ease;
+}
+
+.gs-status.ready {
+  color: var(--success);
+}
+
+.gs-status.error {
+  color: var(--accent-light);
+}
+
+.gs-status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.gs-output-url {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  word-break: break-all;
+  line-height: 1.6;
+  min-height: 20px;
+  transition: color 0.3s ease;
+}
+
+.gs-output-url.empty {
+  color: #2d405c;
+  font-family: var(--font-main);
+  font-style: italic;
+}
+
+/* Copy button — BLUE themed */
+.gs-copy {
+  width: 100%;
+  padding: 15px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-main);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.gs-copy:hover:not(:disabled) {
+  background: rgba(43, 140, 255, 0.08);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 20px -6px var(--accent-glow);
+}
+
+.gs-copy:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.gs-copy.copied {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.gs-copy svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+}
+
+/* Footer */
+.gs-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 26px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.gs-footer .sep {
+  color: var(--accent);
+  font-size: 8px;
+}
+
+/* Brand watermark */
+.gs-brand {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 500;
+  opacity: 0.6;
+}
+
+/* Responsive */
+@media (max-width: 420px) {
+  .gs-card {
+    padding: 28px 22px;
+  }
+  .gs-title {
+    font-size: 26px;
+  }
+  .gs-input {
+    font-size: 13px;
+    padding: 14px 16px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="gs-wrapper">
+  <div class="gs-card">
+    <div class="gs-badge">
+      <span class="gs-pulse"></span>
+      Creator Tamim
+    </div>
+
+    <h1 class="gs-title">Google <span class="accent">Shortlink</span></h1>
+
+    <label class="gs-label" for="gsInputUrl">Google Share URL</label>
+    <div class="gs-field">
+      <input
+        class="gs-input"
+        id="gsInputUrl"
+        type="text"
+        placeholder="https://share.google/xxxxxxxxx"
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </div>
+
+    <button class="gs-btn" id="gsConvertBtn" onclick="gsConvertUrl()">
+      Convert URL
+    </button>
+
+    <div class="gs-output" id="gsOutputBox">
+      <div class="gs-output-head">
+        <label class="gs-label" style="margin-bottom:0;">Converted URL</label>
+        <span class="gs-status" id="gsStatus">
+          <span class="gs-status-dot"></span>
+          <span id="gsStatusText">Idle</span>
+        </span>
+      </div>
+      <div class="gs-output-url empty" id="gsOutputUrl">Waiting for input…</div>
+    </div>
+
+    <button class="gs-copy" id="gsCopyBtn" onclick="gsCopyUrl()" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+      <span id="gsCopyText">Copy URL</span>
+    </button>
+
+  </div>
+
+  <div class="gs-brand">Google Shortlink</div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  var inputEl = document.getElementById('gsInputUrl');
+  var outputEl = document.getElementById('gsOutputUrl');
+  var outputBox = document.getElementById('gsOutputBox');
+  var copyBtn = document.getElementById('gsCopyBtn');
+  var copyText = document.getElementById('gsCopyText');
+  var statusEl = document.getElementById('gsStatus');
+  var statusText = document.getElementById('gsStatusText');
+
+  var currentResult = '';
+
+  function setStatus(type, text) {
+    statusEl.className = 'gs-status ' + type;
+    statusText.textContent = text;
+  }
+
+  function setOutput(text, isEmpty) {
+    outputEl.textContent = text;
+    outputEl.classList.toggle('empty', !!isEmpty);
+    outputBox.classList.toggle('has-result', !isEmpty && !!text);
+  }
+
+  window.gsConvertUrl = function() {
+    var input = inputEl.value.trim();
+    currentResult = '';
+
+    copyBtn.disabled = true;
+    copyBtn.classList.remove('copied');
+    copyText.textContent = 'Copy URL';
+
+    if (!input) {
+      setOutput('Please enter a link above.', true);
+      setStatus('error', 'Empty');
+      return;
+    }
+
+    var match = input.match(/share\.google\/([A-Za-z0-9_\-]+)/i);
+
+    if (match && match[1]) {
+      currentResult = 'https://www.google.com/share.google?q=' + match[1];
+      setOutput(currentResult, false);
+      setStatus('ready', 'Ready');
+      copyBtn.disabled = false;
+    } else {
+      setOutput('Invalid format. Example: https://share.google/xxxxx', true);
+      setStatus('error', 'Invalid');
+    }
+  };
+
+  window.gsCopyUrl = function() {
+    if (!currentResult) return;
+
+    var onSuccess = function() {
+      copyBtn.classList.add('copied');
+      copyText.textContent = 'Copied!';
+      setTimeout(function() {
+        copyBtn.classList.remove('copied');
+        copyText.textContent = 'Copy URL';
+      }, 1800);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(currentResult).then(onSuccess).catch(function() {
+        fallbackCopy(currentResult, onSuccess);
+      });
+    } else {
+      fallbackCopy(currentResult, onSuccess);
+    }
+  };
+
+  function fallbackCopy(text, callback) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      callback();
+    } catch (e) {
+      setStatus('error', 'Copy failed');
+    }
+    document.body.removeChild(ta);
+  }
+
+  inputEl.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      window.gsConvertUrl();
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
